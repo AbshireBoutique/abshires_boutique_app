@@ -1,37 +1,26 @@
-name: Upload Products to Firebase
+const fs = require('fs');
+const admin = require('firebase-admin');
 
-on:
-  push:
-    paths:
-      - 'products.json'  # Trigger the action when the products.json file is updated
-    branches:
-      - main  # Trigger on push to the main branch
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-jobs:
-  upload_products:
-    runs-on: ubuntu-latest
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+const db = admin.firestore();
+const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
+async function uploadProducts() {
+  const batch = db.batch();
+  const productsRef = db.collection('products');
 
-      - name: Install dependencies
-        run: npm install
+  products.forEach((product) => {
+    const docRef = productsRef.doc();
+    batch.set(docRef, product);
+  });
 
-      - name: Upload product data to Firebase
-        env:
-          FIREBASE_AUTH_TOKEN: ${{ secrets.FIREBASE_AUTH_TOKEN }}  # Add Firebase token to secrets
-        run: |
-          # Install Firebase CLI
-          npm install -g firebase-tools
+  await batch.commit();
+  console.log('Products uploaded successfully!');
+}
 
-          # Log in to Firebase using the service account token
-          firebase login --token $FIREBASE_AUTH_TOKEN
-
-          # Upload products to Firestore
-          node uploadProducts.js
+uploadProducts().catch(console.error);
