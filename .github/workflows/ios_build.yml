@@ -3,8 +3,8 @@ name: Build Flutter App (iOS & Android)
 on:
   push:
     branches:
-      - main  # Change if your default branch is different
-  workflow_dispatch:  # Allows manual trigger from GitHub
+      - main
+  workflow_dispatch:
 
 jobs:
   build_ios:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'  # Match your Flutter version
+          flutter-version: '3.19.6'
 
       - name: Install dependencies
         run: flutter pub get
