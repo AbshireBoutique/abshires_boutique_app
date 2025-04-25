@@ -1,26 +1,28 @@
-const fs = require('fs');
-const admin = require('firebase-admin');
+name: Upload Products to Firebase
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+on:
+  push:
+    paths:
+      - 'products.json'
+    branches:
+      - main
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-const db = admin.firestore();
-const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-async function uploadProducts() {
-  const batch = db.batch();
-  const productsRef = db.collection('products');
+      - name: Install Dependencies
+        run: npm install firebase-admin
 
-  products.forEach((product) => {
-    const docRef = productsRef.doc();
-    batch.set(docRef, product);
-  });
-
-  await batch.commit();
-  console.log('Products uploaded successfully!');
-}
-
-uploadProducts().catch(console.error);
+      - name: Upload Products
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node uploadProducts.js
